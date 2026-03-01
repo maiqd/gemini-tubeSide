@@ -5,6 +5,8 @@
   --text-muted: #aaaaaa;
   --accent: #3ea6ff;
   --border: #303030;
+  --base-font-size: 16px;
+  --reading-font: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 :root.theme-light {
@@ -36,16 +38,23 @@
 
 body {
   margin: 0;
-  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  font-family: var(--reading-font);
+  font-size: var(--base-font-size);
   background: var(--bg);
   color: var(--text);
-  font-size: 14px;
 }
 
 .sidepanel {
   min-height: 100vh;
   padding: 16px;
   box-sizing: border-box;
+}
+
+.typography-controls {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
 }
 
 .actions {

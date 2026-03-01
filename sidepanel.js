@@ -4,6 +4,12 @@ const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models
 const STORAGE_KEY = 'gemini_api_key';
 const THEME_STORAGE_KEY = 'themePreference';
 const THEME_DEFAULT = 'default';
+const FONT_FAMILY_STORAGE_KEY = 'fontFamily';
+const FONT_SIZE_STORAGE_KEY = 'fontSize';
+const FONT_SIZE_DEFAULT = 16;
+const FONT_SIZE_MIN = 12;
+const FONT_SIZE_MAX = 30;
+const FONT_SIZE_STEP = 2;
 
 const Mode = Object.freeze({ SUMMARY: 'summary', KEY_TAKEAWAYS: 'key_takeaways' });
 const MSG_ANALYZING = 'Analyzing video...';
@@ -29,7 +35,31 @@ const loadingMessageEl = document.getElementById('loading-message');
 const smartSummaryBtn = document.getElementById('smart-summary');
 const keyTakeawaysBtn = document.getElementById('key-takeaways');
 const themeSelector = document.getElementById('theme-selector');
+const fontSelector = document.getElementById('font-selector');
 const md = new MiniGFM();
+
+let currentFontSize = FONT_SIZE_DEFAULT;
+
+async function loadTypographySettings() {
+  const storage = await chrome.storage.local.get([FONT_FAMILY_STORAGE_KEY, FONT_SIZE_STORAGE_KEY]);
+  if (storage[FONT_FAMILY_STORAGE_KEY]) {
+    fontSelector.value = storage[FONT_FAMILY_STORAGE_KEY];
+    document.documentElement.style.setProperty('--reading-font', storage[FONT_FAMILY_STORAGE_KEY]);
+  }
+  if (storage[FONT_SIZE_STORAGE_KEY] != null) {
+    const size = Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, parseInt(storage[FONT_SIZE_STORAGE_KEY], 10)));
+    if (!Number.isNaN(size)) {
+      currentFontSize = size;
+      document.documentElement.style.setProperty('--base-font-size', `${currentFontSize}px`);
+    }
+  }
+}
+
+function changeFontSize(delta) {
+  currentFontSize = Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, currentFontSize + delta));
+  document.documentElement.style.setProperty('--base-font-size', `${currentFontSize}px`);
+  chrome.storage.local.set({ [FONT_SIZE_STORAGE_KEY]: currentFontSize });
+}
 
 function getCacheKey(videoId, mode) {
   return `${CACHE_PREFIX}${videoId}:${mode}`;
@@ -232,8 +262,18 @@ themeSelector.addEventListener('change', (e) => {
   applyTheme(value);
 });
 
+fontSelector.addEventListener('change', (e) => {
+  const value = e.target.value;
+  document.documentElement.style.setProperty('--reading-font', value);
+  chrome.storage.local.set({ [FONT_FAMILY_STORAGE_KEY]: value });
+});
+
+document.getElementById('btn-text-decrease').addEventListener('click', () => changeFontSize(-FONT_SIZE_STEP));
+document.getElementById('btn-text-increase').addEventListener('click', () => changeFontSize(FONT_SIZE_STEP));
+
 (async function init() {
   setLoadingState(false);
   const savedTheme = await applyReadingMode();
   themeSelector.value = savedTheme || THEME_DEFAULT;
+  await loadTypographySettings();
 })();

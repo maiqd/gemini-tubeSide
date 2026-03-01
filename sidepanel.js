@@ -236,6 +236,7 @@ async function fetchSummary(url, mode) {
     lastUrl = url;
     lastMode = mode;
     outputEl.innerHTML = md.parse(cached);
+    ttsResumeIndex = 0;
     outputEl.hidden = false;
     if (requestAgainBtn) requestAgainBtn.hidden = false;
     setTtsControlsVisible(true);
@@ -322,6 +323,7 @@ async function fetchSummary(url, mode) {
       lastUrl = url;
       lastMode = mode;
       outputEl.innerHTML = md.parse(buffer);
+      ttsResumeIndex = 0;
       outputEl.hidden = false;
       if (requestAgainBtn) requestAgainBtn.hidden = false;
       setTtsControlsVisible(true);
@@ -400,6 +402,8 @@ document.getElementById('btn-text-decrease').addEventListener('click', () => cha
 document.getElementById('btn-text-increase').addEventListener('click', () => changeFontSize(FONT_SIZE_STEP));
 
 let isTtsSpeaking = false;
+let ttsResumeIndex = 0;
+let ttsLastCharIndex = 0;
 
 function resetTtsButton() {
   isTtsSpeaking = false;
@@ -417,6 +421,7 @@ function toggleSpeech() {
   const lang = voice?.lang ?? 'en-US';
 
   if (isTtsSpeaking) {
+    ttsResumeIndex = ttsLastCharIndex;
     window.speechSynthesis.cancel();
     if (chrome.tts) chrome.tts.stop();
     resetTtsButton();
@@ -425,31 +430,42 @@ function toggleSpeech() {
 
   window.speechSynthesis.cancel();
 
+  if (ttsResumeIndex >= text.length) ttsResumeIndex = 0;
+  const textToSpeak = ttsResumeIndex > 0 ? text.slice(ttsResumeIndex) : text;
+  if (!textToSpeak.trim()) {
+    ttsResumeIndex = 0;
+    return;
+  }
+
   const useChromeTts = typeof chrome !== 'undefined' && chrome.tts;
-  console.log('[TTS] voice:', voice?.name ?? 'none', 'lang:', lang, 'rate:', rate, 'useChromeTts:', useChromeTts);
+  console.log('[TTS] voice:', voice?.name ?? 'none', 'lang:', lang, 'rate:', rate, 'useChromeTts:', useChromeTts, 'resumeFrom:', ttsResumeIndex);
 
   if (useChromeTts) {
     isTtsSpeaking = true;
+    ttsLastCharIndex = ttsResumeIndex;
     if (btnReadAloud) btnReadAloud.textContent = 'Stop Audio';
     const voiceName = chromeTtsVoices.length > 0 ? (voiceSelect?.value || chromeTtsVoices[0]?.voiceName) : undefined;
     const opts = {
       rate,
       lang,
       onEvent: (e) => {
+        if (e.charIndex != null) ttsLastCharIndex = ttsResumeIndex + e.charIndex;
         if (e.type === 'error') console.error('[TTS] chrome.tts event error:', e.errorMessage);
+        if (e.type === 'end') ttsResumeIndex = 0;
         if (['end', 'error', 'interrupted', 'cancelled'].includes(e.type)) {
+          if (e.type === 'interrupted' || e.type === 'cancelled') ttsResumeIndex = ttsLastCharIndex;
           resetTtsButton();
         }
       }
     };
     if (voiceName) opts.voiceName = voiceName;
     const cb = () => { if (chrome.runtime?.lastError) console.error('[TTS] chrome.tts error:', chrome.runtime.lastError.message); };
-    const result = chrome.tts.speak(text, opts, cb);
+    const result = chrome.tts.speak(textToSpeak, opts, cb);
     if (result?.then) result.catch((err) => { console.error('[TTS] chrome.tts.speak failed:', err); resetTtsButton(); });
     return;
   }
 
-  const utterance = new SpeechSynthesisUtterance(text);
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
   utterance.rate = rate;
   utterance.volume = 1;
   if (voice) {
@@ -459,7 +475,9 @@ function toggleSpeech() {
     utterance.lang = lang;
   }
 
-  utterance.onend = resetTtsButton;
+  ttsLastCharIndex = ttsResumeIndex;
+  utterance.onboundary = (e) => { if (e.charIndex != null) ttsLastCharIndex = ttsResumeIndex + e.charIndex; };
+  utterance.onend = () => { ttsResumeIndex = 0; resetTtsButton(); };
   utterance.onerror = (e) => {
     console.error('[TTS] utterance error:', e?.error, e);
     resetTtsButton();

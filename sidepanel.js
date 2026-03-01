@@ -32,11 +32,15 @@ async function applyReadingMode() {
 const outputEl = document.getElementById('output');
 const loadingEl = document.getElementById('loading');
 const loadingMessageEl = document.getElementById('loading-message');
+const requestAgainBtn = document.getElementById('request-again');
 const smartSummaryBtn = document.getElementById('smart-summary');
 const keyTakeawaysBtn = document.getElementById('key-takeaways');
 const themeSelector = document.getElementById('theme-selector');
 const fontSelector = document.getElementById('font-selector');
 const md = new MiniGFM();
+
+let lastUrl = null;
+let lastMode = null;
 
 let currentFontSize = FONT_SIZE_DEFAULT;
 
@@ -74,6 +78,7 @@ function setLoadingState(loading, message = MSG_ANALYZING) {
   if (loadingEl) loadingEl.hidden = !loading;
   if (loading) {
     if (outputEl) outputEl.hidden = true;
+    if (requestAgainBtn) requestAgainBtn.hidden = true;
   }
   if (loadingMessageEl) loadingMessageEl.textContent = message;
   smartSummaryBtn.disabled = loading;
@@ -126,8 +131,11 @@ async function fetchSummary(url, mode) {
   const modeKey = mode === 'smart_summary' ? Mode.SUMMARY : Mode.KEY_TAKEAWAYS;
   const cached = videoId ? await getCachedSummary(videoId, modeKey) : null;
   if (cached) {
+    lastUrl = url;
+    lastMode = mode;
     outputEl.innerHTML = md.parse(cached);
     outputEl.hidden = false;
+    if (requestAgainBtn) requestAgainBtn.hidden = false;
     return;
   }
 
@@ -207,8 +215,11 @@ async function fetchSummary(url, mode) {
     if (debounceId) clearTimeout(debounceId);
     setLoadingState(false);
     if (buffer) {
+      lastUrl = url;
+      lastMode = mode;
       outputEl.innerHTML = md.parse(buffer);
       outputEl.hidden = false;
+      if (requestAgainBtn) requestAgainBtn.hidden = false;
       if (videoId) {
         await setCachedSummary(videoId, modeKey, buffer);
         await appendRecentVideo(videoId, url, modeKey, buffer);
@@ -236,7 +247,18 @@ function showError(msg) {
   p.textContent = msg;
   outputEl.appendChild(p);
   outputEl.hidden = false;
+  if (requestAgainBtn) requestAgainBtn.hidden = true;
 }
+
+async function clearCacheAndRefetch() {
+  if (!lastUrl || !lastMode) return;
+  const videoId = extractVideoId(lastUrl);
+  const modeKey = lastMode === 'smart_summary' ? Mode.SUMMARY : Mode.KEY_TAKEAWAYS;
+  if (videoId) await chrome.storage.local.remove(getCacheKey(videoId, modeKey));
+  await fetchSummary(lastUrl, lastMode);
+}
+
+requestAgainBtn?.addEventListener('click', clearCacheAndRefetch);
 
 smartSummaryBtn.addEventListener('click', async () => {
   const url = await getActiveTabUrl();

@@ -7,6 +7,33 @@
   --border: #303030;
 }
 
+:root.theme-light {
+  --bg: #ffffff;
+  --bg-elevated: #f1f3f4;
+  --text: #202124;
+  --text-muted: #5f6368;
+  --accent: #0b57d0;
+  --border: #dadce0;
+}
+
+:root.theme-paper {
+  --bg: #fdf6e3;
+  --bg-elevated: #f5eedc;
+  --text: #383838;
+  --text-muted: #6b5b4f;
+  --accent: #268bd2;
+  --border: #dcd6c8;
+}
+
+:root.theme-blue {
+  --bg: #e8f0fe;
+  --bg-elevated: #d2e3fc;
+  --text: #174ea6;
+  --text-muted: #1967d2;
+  --accent: #0a56d0;
+  --border: #d2e3fc;
+}
+
 body {
   margin: 0;
   font-family: 'Roboto', 'Segoe UI', sans-serif;
@@ -26,6 +53,17 @@ body {
   gap: 8px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+}
+
+.theme-select {
+  padding: 10px 16px;
+  background: var(--bg-elevated);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .btn {
@@ -164,9 +202,9 @@ body {
 [popover] {
   margin: 0;
   padding: 10px 14px;
-  background: #2d2d2d;
+  background: var(--bg-elevated);
   color: var(--text);
-  border: 1px solid #505050;
+  border: 1px solid var(--border);
   border-radius: 6px;
   max-width: 240px;
   font-size: 13px;

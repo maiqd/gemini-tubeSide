@@ -140,9 +140,20 @@
   // sidepanel.js
   var GEMINI_API = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
   var STORAGE_KEY = "gemini_api_key";
+  var THEME_STORAGE_KEY = "themePreference";
+  var THEME_DEFAULT = "default";
+  function applyTheme(theme) {
+    document.documentElement.className = theme && theme !== THEME_DEFAULT ? theme : "";
+  }
+  async function applyReadingMode() {
+    const { [THEME_STORAGE_KEY]: theme } = await chrome.storage.local.get(THEME_STORAGE_KEY);
+    applyTheme(theme);
+    return theme;
+  }
   var outputEl = document.getElementById("output");
   var smartSummaryBtn = document.getElementById("smart-summary");
   var keyTakeawaysBtn = document.getElementById("key-takeaways");
+  var themeSelector = document.getElementById("theme-selector");
   var md = new MiniGFM();
   async function getApiKey() {
     const { [STORAGE_KEY]: key } = await chrome.storage.local.get(STORAGE_KEY);
@@ -237,4 +248,13 @@
       setLoading(false);
     }
   });
+  themeSelector.addEventListener("change", (e) => {
+    const value = e.target.value;
+    chrome.storage.local.set({ [THEME_STORAGE_KEY]: value });
+    applyTheme(value);
+  });
+  (async function init() {
+    const savedTheme = await applyReadingMode();
+    themeSelector.value = savedTheme || THEME_DEFAULT;
+  })();
 })();

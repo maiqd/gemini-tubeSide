@@ -2,10 +2,23 @@ import { MiniGFM } from '@oblivionocean/minigfm';
 
 const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 const STORAGE_KEY = 'gemini_api_key';
+const THEME_STORAGE_KEY = 'themePreference';
+const THEME_DEFAULT = 'default';
+
+function applyTheme(theme) {
+  document.documentElement.className = theme && theme !== THEME_DEFAULT ? theme : '';
+}
+
+async function applyReadingMode() {
+  const { [THEME_STORAGE_KEY]: theme } = await chrome.storage.local.get(THEME_STORAGE_KEY);
+  applyTheme(theme);
+  return theme;
+}
 
 const outputEl = document.getElementById('output');
 const smartSummaryBtn = document.getElementById('smart-summary');
 const keyTakeawaysBtn = document.getElementById('key-takeaways');
+const themeSelector = document.getElementById('theme-selector');
 const md = new MiniGFM();
 
 async function getApiKey() {
@@ -115,3 +128,14 @@ keyTakeawaysBtn.addEventListener('click', async () => {
     setLoading(false);
   }
 });
+
+themeSelector.addEventListener('change', (e) => {
+  const value = e.target.value;
+  chrome.storage.local.set({ [THEME_STORAGE_KEY]: value });
+  applyTheme(value);
+});
+
+(async function init() {
+  const savedTheme = await applyReadingMode();
+  themeSelector.value = savedTheme || THEME_DEFAULT;
+})();

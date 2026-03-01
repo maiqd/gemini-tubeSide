@@ -5,24 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Gemini TubeSide</title>
   <link rel="stylesheet" href="styles.css">
-  <style>
-    .sidepanel { min-height: 100vh; padding: 16px; box-sizing: border-box; }
-    .actions { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-    .btn { padding: 10px 16px; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); border-radius: 4px; cursor: pointer; font-size: 14px; }
-    #smart-summary { anchor-name: --btn-smart; }
-    #key-takeaways { anchor-name: --btn-takeaways; }
-    .btn:hover { background: var(--border); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
-    .output { margin-top: 16px; padding: 12px; background: var(--bg-elevated); border-radius: 4px; line-height: 1.6; }
-    .output p { margin: 0 0 8px 0; }
-    .output p:last-child { margin-bottom: 0; }
-    .output strong { color: var(--accent); }
-    .output code { background: var(--bg); padding: 2px 6px; border-radius: 4px; font-size: 12px; }
-    .error { color: #ff6b6b; }
-    [popover] { margin: 0; padding: 10px 14px; background: #2d2d2d; color: var(--text); border: 1px solid #505050; border-radius: 6px; max-width: 240px; font-size: 13px; box-shadow: 0 4px 12px rgba(0,0,0,0.5); position: fixed; }
-    #smart-summary-hint[popover] { position-anchor: --btn-smart; top: anchor(--btn-smart bottom); left: anchor(--btn-smart left); transform: translateY(8px); }
-    #key-takeaways-hint[popover] { position-anchor: --btn-takeaways; top: anchor(--btn-takeaways bottom); left: anchor(--btn-takeaways left); transform: translateY(8px); }
-  </style>
 </head>
 <body>
   <div class="sidepanel">
@@ -34,6 +16,6 @@
     </div>
     <div id="output" class="output" hidden></div>
   </div>
-  <script src="sidepanel.js" type="module"></script>
+  <script src="sidepanel.bundle.js"></script>
 </body>
 </html>

@@ -1,9 +1,12 @@
+import { MiniGFM } from '@oblivionocean/minigfm';
+
 const GEMINI_API = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 const STORAGE_KEY = 'gemini_api_key';
 
 const outputEl = document.getElementById('output');
 const smartSummaryBtn = document.getElementById('smart-summary');
 const keyTakeawaysBtn = document.getElementById('key-takeaways');
+const md = new MiniGFM();
 
 async function getApiKey() {
   const { [STORAGE_KEY]: key } = await chrome.storage.local.get(STORAGE_KEY);
@@ -16,32 +19,6 @@ async function getActiveTabUrl() {
   return tab.url;
 }
 
-function renderMarkdownSafe(text) {
-  const container = document.createDocumentFragment();
-  const blocks = text.split(/\n\n+/);
-  for (const block of blocks) {
-    const trimmed = block.trim();
-    if (!trimmed) continue;
-    const p = document.createElement('p');
-    const parts = trimmed.split(/(\*\*[^*]+\*\*|`[^`]+`)/);
-    for (const part of parts) {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        const strong = document.createElement('strong');
-        strong.textContent = part.slice(2, -2);
-        p.appendChild(strong);
-      } else if (part.startsWith('`') && part.endsWith('`')) {
-        const code = document.createElement('code');
-        code.textContent = part.slice(1, -1);
-        p.appendChild(code);
-      } else {
-        p.appendChild(document.createTextNode(part));
-      }
-    }
-    container.appendChild(p);
-  }
-  return container;
-}
-
 async function fetchSummary(url, mode) {
   const key = await getApiKey();
   if (!key) {
@@ -51,7 +28,7 @@ async function fetchSummary(url, mode) {
 
   const prompt = mode === 'smart_summary'
     ? 'Provide a concise summary of this YouTube video in 3-5 sentences.'
-    : 'List the key takeaways and main points from this YouTube video. Use bullet-style formatting.';
+    : 'List key takeaways with clear section headers (e.g. **Motivation:**, **Technologies:**). Use bullet points and numbered steps where appropriate. Keep each bullet concise (1-2 sentences).';
 
   const body = {
     contents: [{
@@ -93,7 +70,7 @@ async function fetchSummary(url, mode) {
     return;
   }
 
-  outputEl.replaceChildren(renderMarkdownSafe(text));
+  outputEl.innerHTML = md.parse(text);
   outputEl.hidden = false;
 }
 

@@ -15,19 +15,22 @@ By leveraging the Gemini 2.5 Flash API's native `file_data` property, Gemini Tub
 ## 🛡️ Architecture & Security Requirements
 
 *   **Manifest V3 & Ephemeral Service Workers:** Runs entirely on MV3 standards. All state management and API fetch logic reside in `background.js`, an ephemeral Service Worker that terminates when idle to save resources.
-*   **Strict Content Security Policy (CSP):** The extension strictly prohibits `innerHTML` assignments for un-sanitized API output to prevent XSS attacks and cross-site scripting vulnerabilities originating from malicious YouTube transcripts. All API responses are safely parsed using custom Vanilla JavaScript DOM manipulation.
+*   **Strict Content Security Policy (CSP):** The extension strictly prohibits `innerHTML` assignments for un-sanitized API output to prevent XSS attacks. API responses are rendered via [MiniGFM](https://github.com/OblivionOcean/MiniGFM), which escapes HTML by default.
 *   **No Remotely Hosted Code:** To maintain edge-only security, the extension forbids pulling JavaScript from CDNs. All logic is packaged within the local bundle.
 
 ---
 
 ## 🏃 How to Run
 
-1. Open Chrome and go to `chrome://extensions`
-2. Enable **Developer mode** (toggle in the top-right)
-3. Click **Load unpacked**
-4. Select the `gemini-tubeSide` project directory
-5. Right-click the extension icon → **Options** to add your [Google AI Studio](https://aistudio.google.com/apikey) API key
-6. Open a YouTube video, click the TubeSide button in the player, and use the side panel to generate summaries
+1. Run `npm install` (builds the side panel bundle)
+2. Open Chrome and go to `chrome://extensions`
+3. Enable **Developer mode** (toggle in the top-right)
+4. Click **Load unpacked**
+5. Select the `gemini-tubeSide` project directory
+6. Right-click the extension icon → **Options** to add your [Google AI Studio](https://aistudio.google.com/apikey) API key
+7. Open a YouTube video, click the TubeSide button in the player, and use the side panel to generate summaries
+
+After code changes to `sidepanel.js`, run `npm run build` and reload the extension.
 
 ---
 
@@ -47,7 +50,7 @@ By leveraging the Gemini 2.5 Flash API's native `file_data` property, Gemini Tub
 - [x] YouTube DOM injection with MutationObserver and SPA navigation
 - [x] Side panel and BYOK options
 - [x] Gemini API fetch with `file_data.file_uri`
-- [x] Safe markdown DOM renderer
+- [x] Safe markdown DOM renderer (MiniGFM + structured output styles)
 
 ### Edge case hardening
 - [ ] Quota management: graceful 429 / free-tier limit handling in UI

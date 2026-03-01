@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Gemini TubeSide Options</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    body { padding: 24px; max-width: 480px; }
+    h1 { font-size: 18px; margin-bottom: 16px; }
+    .field { margin-bottom: 16px; }
+    label { display: block; margin-bottom: 6px; color: var(--text-muted); font-size: 12px; }
+    input[type="text"], input[type="password"] { width: 100%; padding: 10px; background: var(--bg-elevated); border: 1px solid var(--border); color: var(--text); border-radius: 4px; font-size: 14px; box-sizing: border-box; }
+    .warning { margin-top: 12px; padding: 12px; background: rgba(255, 107, 107, 0.15); border: 1px solid rgba(255, 107, 107, 0.3); border-radius: 4px; font-size: 12px; color: var(--text-muted); }
+    .btn { padding: 10px 20px; background: var(--accent); border: none; color: var(--bg); border-radius: 4px; cursor: pointer; font-size: 14px; }
+    .btn:hover { opacity: 0.9; }
+  </style>
+</head>
+<body>
+  <h1>Gemini TubeSide Options</h1>
+  <div class="field">
+    <label for="api-key">Google AI Studio (Gemini) API Key</label>
+    <input type="password" id="api-key" placeholder="Enter your API key" autocomplete="off">
+  </div>
+  <button id="save" class="btn">Save</button>
+  <p class="warning">Your API key is stored locally in the browser and is not encrypted. Do not share your key.</p>
+  <script src="options.js"></script>
+</body>
+</html>

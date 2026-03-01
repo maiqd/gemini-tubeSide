@@ -1,0 +1,16 @@
+:root {
+  --bg: #0f0f0f;
+  --bg-elevated: #212121;
+  --text: #f1f1f1;
+  --text-muted: #aaaaaa;
+  --accent: #3ea6ff;
+  --border: #303030;
+}
+
+body {
+  margin: 0;
+  font-family: 'Roboto', 'Segoe UI', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  font-size: 14px;
+}

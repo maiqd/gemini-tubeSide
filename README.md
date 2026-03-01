@@ -20,33 +20,44 @@ By leveraging the Gemini 2.5 Flash API's native `file_data` property, Gemini Tub
 
 ---
 
-## 📝 TODO: Implementation Developer Checklist
+## 🏃 How to Run
 
-The following step-by-step checklist outlines the exact code architecture required to build the MVP, strictly adhering to the "Vanilla JS Builder" persona.
+1. Open Chrome and go to `chrome://extensions`
+2. Enable **Developer mode** (toggle in the top-right)
+3. Click **Load unpacked**
+4. Select the `gemini-tubeSide` project directory
+5. Right-click the extension icon → **Options** to add your [Google AI Studio](https://aistudio.google.com/apikey) API key
+6. Open a YouTube video, click the TubeSide button in the player, and use the side panel to generate summaries
 
-### Phase 1: Project Scaffolding and Manifest Configuration
-- [ ] **Directory Structure:** Create a flat directory to minimize complexity: `manifest.json`, `background.js`, `content.js`, `sidepanel.html`/`sidepanel.js`, `options.html`/`options.js`, and `styles.css`.
-- [ ] **Configure `manifest.json`:** Define MV3 parameters, register the Service Worker (`type: "module"`), and request minimal permissions (`sidePanel`, `storage`, `activeTab`). Set host permissions to `*://*.youtube.com/*` and `https://generativelanguage.googleapis.com/*`.
+---
 
-### Phase 2: YouTube DOM Injection (Content Scripting)
-- [ ] **Implement `MutationObserver`:** Watch for the `.ytp-right-controls` DOM element to load, then disconnect the observer immediately upon finding it to preserve local CPU cycles and memory.
-- [ ] **Inject the Action Button:** Create a Vanilla JS `<button>` with an SVG icon matching YouTube's native `.ytp-button` classes to inherit styling. 
-- [ ] **Handle SPA Events:** Listen for the `yt-navigate-finish` event dispatched by YouTube's custom router to trigger the re-injection logic when the user browses between videos.
+## 🔑 How to Get an API Key
 
-### Phase 3: Service Worker Lifecycle Management
-- [ ] **Programmatic Side Panel Invocation:** Listen for the `open_side_panel` message from `content.js` and execute `chrome.sidePanel.open()` explicitly for the current window.
-- [ ] **Context Management:** Use `chrome.sidePanel.setPanelBehavior` inside `chrome.runtime.onInstalled` to open the panel on action clicks.
+1. Go to [Google AI Studio](https://aistudio.google.com/apikey)
+2. Sign in with your Google account
+3. Click **Create API key** (use an existing Google Cloud project or create one)
+4. Copy the key and paste it in the extension **Options** (right-click the icon → Options). The key is stored only in your browser and is not sent to any third party
 
-### Phase 4: Side Panel UI Engineering (2026 Standards)
-- [ ] **Construct HTML Skeleton:** Implement a clean, dark-mode interface in `sidepanel.html` using native CSS variables.
-- [ ] **Declarative Hover States:** Use the 2026 Interest Invoker API (`interesttarget`) to trigger native HTML `popover` tooltips for action buttons, eliminating JavaScript `mouseenter`/`mouseleave` listeners.
+---
 
-### Phase 5: API Fetch Logic and Native Data Processing
-- [ ] **Retrieve Key Safely:** Asynchronously fetch the Gemini API Key from `chrome.storage.local`.
-- [ ] **Construct Multimodal Payload:** Fetch the active tab URL and send it to the `generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent` endpoint using the `file_data` object.
-- [ ] **Native Markdown Parsing:** Write a lightweight, Vanilla JS custom regex parser to convert markdown responses into DOM nodes (e.g., `document.createElement('p')`) securely, avoiding `innerHTML` vulnerabilities and large libraries like `marked.js`.
+## 📝 TODO
 
-### Phase 6: Edge Case Hardening and Event Cleanup
-- [ ] **Quota Management:** Intercept HTTP 429 status codes and handle Google's strict 8-hour daily free-tier limit for video processing gracefully in the UI.
-- [ ] **Orphaned Context Handling:** Implement a visual try-catch fallback (like a toast notification) for "Extension context invalidated" errors that happen when the extension is manually reloaded during development.
-- [ ] **Error Catching:** Handle 400 Bad Request errors for private or unlisted YouTube videos.
+### MVP (Done)
+- [x] Project scaffolding and manifest
+- [x] YouTube DOM injection with MutationObserver and SPA navigation
+- [x] Side panel and BYOK options
+- [x] Gemini API fetch with `file_data.file_uri`
+- [x] Safe markdown DOM renderer
+
+### Edge case hardening
+- [ ] Quota management: graceful 429 / free-tier limit handling in UI
+- [ ] Orphaned context: visual fallback when extension is reloaded during use
+- [ ] Improved 400 handling for private/unlisted videos
+
+### Future features
+- [ ] Popup that instructs user to get an API key (with link to Google AI Studio) when none is set
+- [ ] Cache summary/key-takeaway response per video; reuse until user requests "generate again"
+- [ ] List of recently summarized videos (key takeaway + smart summary) for quick access
+- [ ] Semantic timeline scrubbing (Interest Invoker API on progress bar)
+- [ ] Micro-interval querying (`startOffset` / `endOffset`)
+- [ ] Ephemeral concept mapping (CSS Anchor Positioning)

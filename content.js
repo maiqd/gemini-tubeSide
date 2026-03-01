@@ -1,19 +1,32 @@
-const YTP_RIGHT_CONTROLS_SELECTOR = '.ytp-right-controls';
+const YTP_RIGHT_CONTROLS_SELECTOR = '.ytp-right-controls-left, .ytp-right-controls';
+const YTP_BUTTON_SELECTOR = '.ytp-autonav-toggle-button, .ytp-right-controls .ytp-button:not(.gemini-tubeside-btn), .ytp-right-controls-left .ytp-button:not(.gemini-tubeside-btn)';
+const INNER_CONTAINER_CLASS = 'ytp-autonav-toggle-button-container';
 const SVG_ICON =
-  '<svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path fill="currentColor" d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2v5h5l-5-5zm-2 8h2v6h-2v-6zm2-4h2v2h-2v-2z"/></svg>';
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="14" height="18" rx="1"/><rect x="18" y="5" width="3" height="14" rx="0.5"/></svg>';
 
 function injectButton() {
   const controls = document.querySelector(YTP_RIGHT_CONTROLS_SELECTOR);
   if (!controls || document.querySelector('.gemini-tubeside-btn')) return;
 
-  const btn = document.createElement('button');
+  const templateBtn = document.querySelector(YTP_BUTTON_SELECTOR);
+  const btn = templateBtn ? templateBtn.cloneNode(true) : document.createElement('button');
+  if (!templateBtn) {
+    btn.style.cssText = 'width:48px;height:40px;padding:0;margin:0;border:none;background:transparent;';
+  }
+
   btn.className = 'ytp-button gemini-tubeside-btn';
   btn.title = 'Open Gemini TubeSide';
   btn.setAttribute('aria-label', 'Open Gemini TubeSide');
-  btn.innerHTML = SVG_ICON;
-  btn.style.cssText = 'width:48px;height:48px;display:flex;align-items:center;justify-content:center;';
+  btn.replaceChildren();
 
-  btn.addEventListener('click', () => {
+  const inner = document.createElement('div');
+  inner.className = INNER_CONTAINER_CLASS;
+  inner.style.cssText = 'width:48px;height:40px;display:flex;align-items:center;justify-content:center;';
+  inner.innerHTML = SVG_ICON;
+  btn.appendChild(inner);
+
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
     try {
       chrome.runtime.sendMessage({ action: 'open_side_panel' });
     } catch {

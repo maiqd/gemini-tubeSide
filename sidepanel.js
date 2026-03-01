@@ -11,6 +11,10 @@ const FONT_SIZE_MIN = 12;
 const FONT_SIZE_MAX = 30;
 const FONT_SIZE_STEP = 2;
 
+const TTS_STORAGE_VOICE_KEY = 'ttsVoice';
+const TTS_STORAGE_SPEED_KEY = 'ttsSpeed';
+const TTS_SPEED_DEFAULT = 1;
+
 const Mode = Object.freeze({ SUMMARY: 'summary', KEY_TAKEAWAYS: 'key_takeaways' });
 const MSG_ANALYZING = 'Analyzing video...';
 const CACHE_PREFIX = 'cache:';
@@ -37,7 +41,15 @@ const smartSummaryBtn = document.getElementById('smart-summary');
 const keyTakeawaysBtn = document.getElementById('key-takeaways');
 const themeSelector = document.getElementById('theme-selector');
 const fontSelector = document.getElementById('font-selector');
+const ttsControlsEl = document.getElementById('tts-controls');
+const btnReadAloud = document.getElementById('btn-read-aloud');
+const voiceSelect = document.getElementById('voice-select');
+const speedSlider = document.getElementById('speed-slider');
+const speedValueLabel = document.getElementById('speed-value');
 const md = new MiniGFM();
+
+let ttsVoices = [];
+let chromeTtsVoices = [];
 
 let lastUrl = null;
 let lastMode = null;
@@ -65,6 +77,91 @@ function changeFontSize(delta) {
   chrome.storage.local.set({ [FONT_SIZE_STORAGE_KEY]: currentFontSize });
 }
 
+function getFilteredVoices(allVoices) {
+  const isEnOrVi = (v) => v.lang.startsWith('en') || v.lang.startsWith('vi');
+  const isLocal = (v) => v.localService === true;
+  const isGoogle = (v) => v.name.includes('Google');
+  const localEnVi = allVoices.filter((v) => isEnOrVi(v) && isLocal(v) && !isGoogle(v));
+  if (localEnVi.length > 0) return localEnVi;
+  const localGoogleEnVi = allVoices.filter((v) => isEnOrVi(v) && isGoogle(v) && isLocal(v));
+  if (localGoogleEnVi.length > 0) return localGoogleEnVi;
+  const googleEnVi = allVoices.filter((v) => isEnOrVi(v) && isGoogle(v));
+  if (googleEnVi.length > 0) return googleEnVi;
+  const enVi = allVoices.filter(isEnOrVi);
+  if (enVi.length > 0) return enVi;
+  return allVoices;
+}
+
+function filterChromeTtsVoices(voices) {
+  const isEnOrVi = (v) => (v.lang || '').startsWith('en') || (v.lang || '').startsWith('vi');
+  return voices.filter(isEnOrVi);
+}
+
+function populateFromChromeTts() {
+  if (!chrome.tts || !voiceSelect) return;
+  const p = chrome.tts.getVoices();
+  if (typeof p?.then !== 'function') return;
+  p.then((voices) => {
+    chromeTtsVoices = filterChromeTtsVoices(voices || []);
+    console.log('[TTS] chrome.tts voices:', chromeTtsVoices.length, chromeTtsVoices.map((v) => v.voiceName));
+    if (chromeTtsVoices.length === 0) return;
+    voiceSelect.innerHTML = '';
+    chromeTtsVoices.forEach((v) => {
+      const option = document.createElement('option');
+      option.value = v.voiceName || '';
+      option.textContent = `${v.voiceName || 'Default'} (${v.lang || ''})`;
+      voiceSelect.appendChild(option);
+    });
+    chrome.storage.local.get([TTS_STORAGE_VOICE_KEY], (result) => {
+      const saved = result[TTS_STORAGE_VOICE_KEY];
+      if (saved && chromeTtsVoices.some((v) => v.voiceName === saved)) {
+        voiceSelect.value = saved;
+      } else {
+        voiceSelect.selectedIndex = 0;
+        if (chromeTtsVoices[0]?.voiceName) {
+          chrome.storage.local.set({ [TTS_STORAGE_VOICE_KEY]: chromeTtsVoices[0].voiceName });
+        }
+      }
+    });
+    if (btnReadAloud) btnReadAloud.disabled = false;
+  }).catch((err) => console.error('[TTS] chrome.tts.getVoices failed:', err));
+}
+
+function populateFilteredVoices() {
+  const all = window.speechSynthesis.getVoices();
+  ttsVoices = getFilteredVoices(all);
+  console.log('[TTS] voices loaded:', all.length, 'filtered:', ttsVoices.length, ttsVoices.map((v) => v.name));
+  if (!voiceSelect) return;
+  if (typeof chrome !== 'undefined' && chrome.tts) {
+    populateFromChromeTts();
+    return;
+  }
+  voiceSelect.innerHTML = '';
+  if (ttsVoices.length === 0) {
+    const option = document.createElement('option');
+    option.textContent = 'No voices available';
+    option.disabled = true;
+    voiceSelect.appendChild(option);
+    if (btnReadAloud) btnReadAloud.disabled = true;
+    return;
+  }
+  if (btnReadAloud) btnReadAloud.disabled = false;
+  ttsVoices.forEach((voice) => {
+    const option = document.createElement('option');
+    option.value = voice.voiceURI;
+    option.textContent = `${voice.name} (${voice.lang})`;
+    voiceSelect.appendChild(option);
+  });
+  chrome.storage.local.get([TTS_STORAGE_VOICE_KEY], (result) => {
+    const saved = result[TTS_STORAGE_VOICE_KEY];
+    if (saved && ttsVoices.some((v) => v.voiceURI === saved)) {
+      voiceSelect.value = saved;
+    } else {
+      voiceSelect.selectedIndex = 0;
+    }
+  });
+}
+
 function getCacheKey(videoId, mode) {
   return `${CACHE_PREFIX}${videoId}:${mode}`;
 }
@@ -74,11 +171,16 @@ function extractVideoId(url) {
   return m ? m[1] : null;
 }
 
+function setTtsControlsVisible(visible) {
+  if (ttsControlsEl) ttsControlsEl.hidden = !visible;
+}
+
 function setLoadingState(loading, message = MSG_ANALYZING) {
   if (loadingEl) loadingEl.hidden = !loading;
   if (loading) {
     if (outputEl) outputEl.hidden = true;
     if (requestAgainBtn) requestAgainBtn.hidden = true;
+    setTtsControlsVisible(false);
   }
   if (loadingMessageEl) loadingMessageEl.textContent = message;
   smartSummaryBtn.disabled = loading;
@@ -134,8 +236,10 @@ async function fetchSummary(url, mode) {
     lastUrl = url;
     lastMode = mode;
     outputEl.innerHTML = md.parse(cached);
+    ttsResumeIndex = 0;
     outputEl.hidden = false;
     if (requestAgainBtn) requestAgainBtn.hidden = false;
+    setTtsControlsVisible(true);
     return;
   }
 
@@ -205,6 +309,7 @@ async function fetchSummary(url, mode) {
         firstChunk = false;
         setLoadingState(false);
         outputEl.hidden = false;
+        setTtsControlsVisible(true);
       }
       if (debounceId) clearTimeout(debounceId);
       debounceId = setTimeout(() => {
@@ -218,8 +323,10 @@ async function fetchSummary(url, mode) {
       lastUrl = url;
       lastMode = mode;
       outputEl.innerHTML = md.parse(buffer);
+      ttsResumeIndex = 0;
       outputEl.hidden = false;
       if (requestAgainBtn) requestAgainBtn.hidden = false;
+      setTtsControlsVisible(true);
       if (videoId) {
         await setCachedSummary(videoId, modeKey, buffer);
         await appendRecentVideo(videoId, url, modeKey, buffer);
@@ -248,6 +355,7 @@ function showError(msg) {
   outputEl.appendChild(p);
   outputEl.hidden = false;
   if (requestAgainBtn) requestAgainBtn.hidden = true;
+  setTtsControlsVisible(false);
 }
 
 async function clearCacheAndRefetch() {
@@ -292,6 +400,130 @@ fontSelector.addEventListener('change', (e) => {
 
 document.getElementById('btn-text-decrease').addEventListener('click', () => changeFontSize(-FONT_SIZE_STEP));
 document.getElementById('btn-text-increase').addEventListener('click', () => changeFontSize(FONT_SIZE_STEP));
+
+let isTtsSpeaking = false;
+let ttsResumeIndex = 0;
+let ttsLastCharIndex = 0;
+
+function resetTtsButton() {
+  isTtsSpeaking = false;
+  if (btnReadAloud) btnReadAloud.textContent = 'Read Aloud';
+}
+
+function toggleSpeech() {
+  const text = outputEl?.textContent?.trim() ?? '';
+  console.log('[TTS] text length:', text.length, 'preview:', text.slice(0, 50));
+  if (!text || text.includes(MSG_ANALYZING)) return;
+
+  const rate = parseFloat(speedSlider?.value ?? TTS_SPEED_DEFAULT);
+  const selectedUri = voiceSelect?.value;
+  const voice = ttsVoices.find((v) => v.voiceURI === selectedUri);
+  const lang = voice?.lang ?? 'en-US';
+
+  if (isTtsSpeaking) {
+    ttsResumeIndex = ttsLastCharIndex;
+    window.speechSynthesis.cancel();
+    if (chrome.tts) chrome.tts.stop();
+    resetTtsButton();
+    return;
+  }
+
+  window.speechSynthesis.cancel();
+
+  if (ttsResumeIndex >= text.length) ttsResumeIndex = 0;
+  const textToSpeak = ttsResumeIndex > 0 ? text.slice(ttsResumeIndex) : text;
+  if (!textToSpeak.trim()) {
+    ttsResumeIndex = 0;
+    return;
+  }
+
+  const useChromeTts = typeof chrome !== 'undefined' && chrome.tts;
+  console.log('[TTS] voice:', voice?.name ?? 'none', 'lang:', lang, 'rate:', rate, 'useChromeTts:', useChromeTts, 'resumeFrom:', ttsResumeIndex);
+
+  if (useChromeTts) {
+    isTtsSpeaking = true;
+    ttsLastCharIndex = ttsResumeIndex;
+    if (btnReadAloud) btnReadAloud.textContent = 'Stop Audio';
+    const voiceName = chromeTtsVoices.length > 0 ? (voiceSelect?.value || chromeTtsVoices[0]?.voiceName) : undefined;
+    const opts = {
+      rate,
+      lang,
+      onEvent: (e) => {
+        if (e.charIndex != null) ttsLastCharIndex = ttsResumeIndex + e.charIndex;
+        if (e.type === 'error') console.error('[TTS] chrome.tts event error:', e.errorMessage);
+        if (e.type === 'end') ttsResumeIndex = 0;
+        if (['end', 'error', 'interrupted', 'cancelled'].includes(e.type)) {
+          if (e.type === 'interrupted' || e.type === 'cancelled') ttsResumeIndex = ttsLastCharIndex;
+          resetTtsButton();
+        }
+      }
+    };
+    if (voiceName) opts.voiceName = voiceName;
+    const cb = () => { if (chrome.runtime?.lastError) console.error('[TTS] chrome.tts error:', chrome.runtime.lastError.message); };
+    const result = chrome.tts.speak(textToSpeak, opts, cb);
+    if (result?.then) result.catch((err) => { console.error('[TTS] chrome.tts.speak failed:', err); resetTtsButton(); });
+    return;
+  }
+
+  const utterance = new SpeechSynthesisUtterance(textToSpeak);
+  utterance.rate = rate;
+  utterance.volume = 1;
+  if (voice) {
+    utterance.voice = voice;
+    utterance.lang = voice.lang;
+  } else {
+    utterance.lang = lang;
+  }
+
+  ttsLastCharIndex = ttsResumeIndex;
+  utterance.onboundary = (e) => { if (e.charIndex != null) ttsLastCharIndex = ttsResumeIndex + e.charIndex; };
+  utterance.onend = () => { ttsResumeIndex = 0; resetTtsButton(); };
+  utterance.onerror = (e) => {
+    console.error('[TTS] utterance error:', e?.error, e);
+    resetTtsButton();
+  };
+
+  isTtsSpeaking = true;
+  if (btnReadAloud) btnReadAloud.textContent = 'Stop Audio';
+
+  window.speechSynthesis.resume();
+  window.speechSynthesis.speak(utterance);
+  console.log('[TTS] speak() called, synthesis.speaking:', window.speechSynthesis.speaking);
+}
+
+if (typeof window.speechSynthesis !== 'undefined') {
+  window.speechSynthesis.onvoiceschanged = populateFilteredVoices;
+  populateFilteredVoices();
+}
+if (typeof chrome !== 'undefined' && chrome.tts?.onVoicesChanged?.addListener) {
+  chrome.tts.onVoicesChanged.addListener(populateFilteredVoices);
+}
+
+if (speedSlider) {
+  chrome.storage.local.get([TTS_STORAGE_SPEED_KEY], (result) => {
+    const speed = result[TTS_STORAGE_SPEED_KEY];
+    if (speed != null) {
+      const val = Math.max(0.5, Math.min(2, parseFloat(speed)));
+      if (!Number.isNaN(val)) {
+        speedSlider.value = val;
+        if (speedValueLabel) speedValueLabel.textContent = `${val}x`;
+      }
+    }
+  });
+  speedSlider.addEventListener('input', (e) => {
+    const val = e.target.value;
+    if (speedValueLabel) speedValueLabel.textContent = `${val}x`;
+    chrome.storage.local.set({ [TTS_STORAGE_SPEED_KEY]: val });
+  });
+}
+
+if (voiceSelect) {
+  voiceSelect.addEventListener('change', (e) => {
+    chrome.storage.local.set({ [TTS_STORAGE_VOICE_KEY]: e.target.value });
+  });
+}
+
+if (btnReadAloud) btnReadAloud.addEventListener('click', toggleSpeech);
 
 (async function init() {
   setLoadingState(false);

@@ -103,6 +103,25 @@ body {
   margin-top: 20px;
 }
 
+.tts-controls {
+  margin-bottom: 15px;
+  padding: 10px;
+  background: var(--bg-elevated);
+  border-radius: 8px;
+}
+
+.tts-label {
+  font-size: 0.85em;
+  display: block;
+  margin-bottom: 5px;
+  color: var(--text-muted);
+}
+
+.tts-slider {
+  width: 100%;
+  accent-color: var(--accent);
+}
+
 .btn-request-again {
   position: absolute;
   top: 8px;

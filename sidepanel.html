@@ -31,6 +31,13 @@
       <p id="key-takeaways-hint" popover="hint">Extract the main points and lessons</p>
     </div>
     <div class="output-wrapper">
+      <div id="tts-controls" class="tts-controls" hidden>
+        <button type="button" id="btn-read-aloud" class="btn" style="margin-bottom: 10px;">Read Aloud</button>
+        <label for="voice-select" class="tts-label">Voice (EN/VI preferred):</label>
+        <select id="voice-select" class="theme-select" style="width: 100%; margin-bottom: 10px;"></select>
+        <label for="speed-slider" class="tts-label">Speed: <span id="speed-value">1.0x</span></label>
+        <input type="range" id="speed-slider" class="tts-slider" min="0.5" max="2" step="0.1" value="1">
+      </div>
       <button type="button" id="request-again" class="btn-request-again" hidden>Request again</button>
       <div id="output" class="output" hidden></div>
     </div>

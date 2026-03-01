@@ -35,6 +35,24 @@ After code changes to `sidepanel.js`, run `npm run build` and reload the extensi
 
 ---
 
+## 💰 Cost (Gemini 2.5 Flash)
+
+The extension uses **Gemini 2.5 Flash** via `streamGenerateContent` with a short text prompt plus the video (YouTube URL via `file_data.file_uri`). Billing is per token; video length and resolution affect input tokens.
+
+| Tier | Input (per 1M tokens) | Output (per 1M tokens) |
+|------|------------------------|-------------------------|
+| Paid | $0.30                  | $2.50                   |
+
+**Rough per-request estimate (paid tier):**
+
+- **Input:** ~60 tokens (prompt) + video-dependent (e.g. ~3k–15k tokens for a 5–15 min video) → **~$0.001–$0.005** per summary.
+- **Output:** ~200–500 tokens (summary or key takeaways) → **~$0.0005–$0.0013** per response.
+- **Total:** **~$0.002–$0.006 per request** (about **$0.20–$0.60 per 100 summaries**).
+
+**Free tier:** Google AI Studio free tier has a **daily request cap** (e.g. 20 requests/day for some models). Once exceeded, you get 429 until the quota resets. See [Gemini API pricing](https://ai.google.dev/gemini-api/docs/pricing) and your [Cloud Console quotas](https://console.cloud.google.com/apis/api/generativelanguage.googleapis.com/quotas) for exact limits and current pricing.
+
+---
+
 ## 🔑 How to Get an API Key
 
 1. Go to [Google AI Studio](https://aistudio.google.com/apikey)

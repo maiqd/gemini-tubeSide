@@ -1,0 +1,15 @@
+{
+  "name": "gemini-tubeside",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "build": "esbuild sidepanel.js --bundle --outfile=sidepanel.bundle.js",
+    "postinstall": "npm run build"
+  },
+  "dependencies": {
+    "@oblivionocean/minigfm": "^1.0.0"
+  },
+  "devDependencies": {
+    "esbuild": "^0.24.0"
+  }
+}

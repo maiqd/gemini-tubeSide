@@ -86,8 +86,8 @@ body {
 }
 
 .output {
-  margin-top: 16px;
-  padding: 16px;
+  margin-top: 20px;
+  padding: 32px;
   background: var(--bg-elevated);
   border-radius: 6px;
   line-height: 1.65;
@@ -193,6 +193,39 @@ body {
 .output th {
   background: var(--bg);
   font-weight: 600;
+}
+
+.loading {
+  margin-top: 16px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+.loading[hidden] {
+  display: none;
+}
+
+.loading p {
+  margin: 0;
+}
+
+.spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
 }
 
 .error {

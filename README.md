@@ -6,11 +6,12 @@ By leveraging the Gemini 2.5 Flash API's native `file_data` property, Gemini Tub
 
 ## 🚀 Core Features & Innovations
 
-*   **Zero-Telemetry BYOK Architecture:** A "Bring Your Own Key" privacy model stores your Google AI Studio (Gemini) API key securely within the browser's `chrome.storage.local`. There are no developer-hosted backend servers, eliminating data exfiltration and server latency.
-*   **Semantic Timeline Scrubbing:** Re-engineers the video navigation experience using the 2026 HTML Interest Invoker API. Invisible anchor nodes are injected into the native YouTube progress bar. By using the `interesttarget` attribute, the browser renders hardware-accelerated context popovers natively on hover, completely eliminating JavaScript event listener bloat.
-*   **Micro-Interval Querying:** Perform highly specific "Quick Questions" using the `videoMetadata` payload limits (`startOffset` and `endOffset`). This forces the Gemini model to focus its attention mechanism on a narrow time window, slashing token consumption, reducing hallucination rates, and dropping processing latency to milliseconds.
-*   **Ephemeral Concept Mapping:** Dynamically generates hierarchical mind maps of video concepts utilizing the CSS Anchor Positioning API (`anchor-name` and `position-anchor`), achieving complex visual layouts purely in CSS without external charting libraries like D3.js or Chart.js.
-*   **Seamless YouTube SPA Integration:** Injects a minimalistic custom SVG button seamlessly into the YouTube player (`.ytp-right-controls`) that is designed to survive YouTube's Single Page Application (SPA) navigation events natively.
+*   **Zero-Telemetry BYOK Architecture:** A "Bring Your Own Key" privacy model stores your Google AI Studio (Gemini) API key securely in `chrome.storage.local`. No developer-hosted backend; no data exfiltration or server latency.
+*   **Typography & Sizing Controls:** Font family selector (Modern Sans, Reading Serif, Code Mono, Accessible) and A-/A+ size buttons in the side panel. Settings persist in `chrome.storage.local`. System fonts only—no external web fonts or network requests.
+*   **Theme-Aware Code Styling:** Inline and block code use a dedicated `--code-bg` per theme so snippets stay readable in every theme (Dark, Crisp Light, Reading Paper, Soft Blue).
+*   **Theme Selector:** Four themes—YouTube Native (Dark), Crisp Light, Reading Paper (Sepia), Soft Blue—stored and applied via CSS custom properties.
+*   **Per-Video Caching:** Smart Summary and Key Takeaways are cached per video; reopening the same video reuses the cached result until you request a fresh run.
+*   **Seamless YouTube SPA Integration:** Injects a minimalistic custom SVG button into the YouTube player (`.ytp-right-controls`) that survives YouTube SPA navigation.
 
 ## 🛡️ Architecture & Security Requirements
 
@@ -28,7 +29,7 @@ By leveraging the Gemini 2.5 Flash API's native `file_data` property, Gemini Tub
 4. Click **Load unpacked**
 5. Select the `gemini-tubeSide` project directory
 6. Right-click the extension icon → **Options** to add your [Google AI Studio](https://aistudio.google.com/apikey) API key
-7. Open a YouTube video, click the TubeSide button in the player, and use the side panel to generate summaries
+7. Open a YouTube video, click the TubeSide button in the player, and use the side panel to generate **Smart Summary** or **Key Takeaways**. Use the font dropdown and A-/A+ buttons to adjust typography; use the theme dropdown to switch color themes.
 
 After code changes to `sidepanel.js`, run `npm run build` and reload the extension.
 
@@ -51,6 +52,9 @@ After code changes to `sidepanel.js`, run `npm run build` and reload the extensi
 - [x] Side panel and BYOK options
 - [x] Gemini API fetch with `file_data.file_uri`
 - [x] Safe markdown DOM renderer (MiniGFM + structured output styles)
+- [x] Typography controls (font family + font size) with persistent storage
+- [x] Theme selector and theme-aware code block styling
+- [x] Cache summary/key-takeaways per video; reuse until user requests again
 
 ### Edge case hardening
 - [ ] Quota management: graceful 429 / free-tier limit handling in UI
@@ -58,9 +62,9 @@ After code changes to `sidepanel.js`, run `npm run build` and reload the extensi
 - [ ] Improved 400 handling for private/unlisted videos
 
 ### Future features
+- [ ] Text to speech
 - [ ] Popup that instructs user to get an API key (with link to Google AI Studio) when none is set
-- [ ] Cache summary/key-takeaway response per video; reuse until user requests "generate again"
-- [ ] List of recently summarized videos (key takeaway + smart summary) for quick access
+- [ ] List of recently summarized videos for quick access
 - [ ] Semantic timeline scrubbing (Interest Invoker API on progress bar)
 - [ ] Micro-interval querying (`startOffset` / `endOffset`)
 - [ ] Ephemeral concept mapping (CSS Anchor Positioning)

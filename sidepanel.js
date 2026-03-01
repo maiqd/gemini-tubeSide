@@ -4,6 +4,12 @@ const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models
 const STORAGE_KEY = 'gemini_api_key';
 const THEME_STORAGE_KEY = 'themePreference';
 const THEME_DEFAULT = 'default';
+const FONT_FAMILY_STORAGE_KEY = 'fontFamily';
+const FONT_SIZE_STORAGE_KEY = 'fontSize';
+const FONT_SIZE_DEFAULT = 16;
+const FONT_SIZE_MIN = 12;
+const FONT_SIZE_MAX = 30;
+const FONT_SIZE_STEP = 2;
 
 const Mode = Object.freeze({ SUMMARY: 'summary', KEY_TAKEAWAYS: 'key_takeaways' });
 const MSG_ANALYZING = 'Analyzing video...';
@@ -26,10 +32,38 @@ async function applyReadingMode() {
 const outputEl = document.getElementById('output');
 const loadingEl = document.getElementById('loading');
 const loadingMessageEl = document.getElementById('loading-message');
+const requestAgainBtn = document.getElementById('request-again');
 const smartSummaryBtn = document.getElementById('smart-summary');
 const keyTakeawaysBtn = document.getElementById('key-takeaways');
 const themeSelector = document.getElementById('theme-selector');
+const fontSelector = document.getElementById('font-selector');
 const md = new MiniGFM();
+
+let lastUrl = null;
+let lastMode = null;
+
+let currentFontSize = FONT_SIZE_DEFAULT;
+
+async function loadTypographySettings() {
+  const storage = await chrome.storage.local.get([FONT_FAMILY_STORAGE_KEY, FONT_SIZE_STORAGE_KEY]);
+  if (storage[FONT_FAMILY_STORAGE_KEY]) {
+    fontSelector.value = storage[FONT_FAMILY_STORAGE_KEY];
+    document.documentElement.style.setProperty('--reading-font', storage[FONT_FAMILY_STORAGE_KEY]);
+  }
+  if (storage[FONT_SIZE_STORAGE_KEY] != null) {
+    const size = Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, parseInt(storage[FONT_SIZE_STORAGE_KEY], 10)));
+    if (!Number.isNaN(size)) {
+      currentFontSize = size;
+      document.documentElement.style.setProperty('--base-font-size', `${currentFontSize}px`);
+    }
+  }
+}
+
+function changeFontSize(delta) {
+  currentFontSize = Math.max(FONT_SIZE_MIN, Math.min(FONT_SIZE_MAX, currentFontSize + delta));
+  document.documentElement.style.setProperty('--base-font-size', `${currentFontSize}px`);
+  chrome.storage.local.set({ [FONT_SIZE_STORAGE_KEY]: currentFontSize });
+}
 
 function getCacheKey(videoId, mode) {
   return `${CACHE_PREFIX}${videoId}:${mode}`;
@@ -44,6 +78,7 @@ function setLoadingState(loading, message = MSG_ANALYZING) {
   if (loadingEl) loadingEl.hidden = !loading;
   if (loading) {
     if (outputEl) outputEl.hidden = true;
+    if (requestAgainBtn) requestAgainBtn.hidden = true;
   }
   if (loadingMessageEl) loadingMessageEl.textContent = message;
   smartSummaryBtn.disabled = loading;
@@ -96,8 +131,11 @@ async function fetchSummary(url, mode) {
   const modeKey = mode === 'smart_summary' ? Mode.SUMMARY : Mode.KEY_TAKEAWAYS;
   const cached = videoId ? await getCachedSummary(videoId, modeKey) : null;
   if (cached) {
+    lastUrl = url;
+    lastMode = mode;
     outputEl.innerHTML = md.parse(cached);
     outputEl.hidden = false;
+    if (requestAgainBtn) requestAgainBtn.hidden = false;
     return;
   }
 
@@ -177,8 +215,11 @@ async function fetchSummary(url, mode) {
     if (debounceId) clearTimeout(debounceId);
     setLoadingState(false);
     if (buffer) {
+      lastUrl = url;
+      lastMode = mode;
       outputEl.innerHTML = md.parse(buffer);
       outputEl.hidden = false;
+      if (requestAgainBtn) requestAgainBtn.hidden = false;
       if (videoId) {
         await setCachedSummary(videoId, modeKey, buffer);
         await appendRecentVideo(videoId, url, modeKey, buffer);
@@ -206,7 +247,18 @@ function showError(msg) {
   p.textContent = msg;
   outputEl.appendChild(p);
   outputEl.hidden = false;
+  if (requestAgainBtn) requestAgainBtn.hidden = true;
 }
+
+async function clearCacheAndRefetch() {
+  if (!lastUrl || !lastMode) return;
+  const videoId = extractVideoId(lastUrl);
+  const modeKey = lastMode === 'smart_summary' ? Mode.SUMMARY : Mode.KEY_TAKEAWAYS;
+  if (videoId) await chrome.storage.local.remove(getCacheKey(videoId, modeKey));
+  await fetchSummary(lastUrl, lastMode);
+}
+
+requestAgainBtn?.addEventListener('click', clearCacheAndRefetch);
 
 smartSummaryBtn.addEventListener('click', async () => {
   const url = await getActiveTabUrl();
@@ -232,8 +284,18 @@ themeSelector.addEventListener('change', (e) => {
   applyTheme(value);
 });
 
+fontSelector.addEventListener('change', (e) => {
+  const value = e.target.value;
+  document.documentElement.style.setProperty('--reading-font', value);
+  chrome.storage.local.set({ [FONT_FAMILY_STORAGE_KEY]: value });
+});
+
+document.getElementById('btn-text-decrease').addEventListener('click', () => changeFontSize(-FONT_SIZE_STEP));
+document.getElementById('btn-text-increase').addEventListener('click', () => changeFontSize(FONT_SIZE_STEP));
+
 (async function init() {
   setLoadingState(false);
   const savedTheme = await applyReadingMode();
   themeSelector.value = savedTheme || THEME_DEFAULT;
+  await loadTypographySettings();
 })();

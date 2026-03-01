@@ -8,6 +8,16 @@
 </head>
 <body>
   <div class="sidepanel">
+    <div class="typography-controls">
+      <select id="font-selector" class="theme-select">
+        <option value="system-ui, -apple-system, &quot;Segoe UI&quot;, Roboto, sans-serif">Modern (Sans)</option>
+        <option value="Georgia, &quot;Times New Roman&quot;, serif">Reading (Serif)</option>
+        <option value="ui-monospace, &quot;Cascadia Code&quot;, Menlo, Consolas, monospace">Code (Mono)</option>
+        <option value="&quot;Comic Sans MS&quot;, &quot;Chalkboard SE&quot;, sans-serif">Accessible</option>
+      </select>
+      <button id="btn-text-decrease" class="btn">A-</button>
+      <button id="btn-text-increase" class="btn">A+</button>
+    </div>
     <div class="actions">
       <select id="theme-selector" class="theme-select">
         <option value="default">YouTube Native (Dark)</option>
@@ -20,7 +30,10 @@
       <button id="key-takeaways" class="btn" interestfor="key-takeaways-hint">Key Takeaways</button>
       <p id="key-takeaways-hint" popover="hint">Extract the main points and lessons</p>
     </div>
-    <div id="output" class="output" hidden></div>
+    <div class="output-wrapper">
+      <button type="button" id="request-again" class="btn-request-again" hidden>Request again</button>
+      <div id="output" class="output" hidden></div>
+    </div>
     <div id="loading" class="loading" hidden>
       <div class="spinner"></div>
       <p id="loading-message">Analyzing video...</p>

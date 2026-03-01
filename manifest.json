@@ -1,0 +1,31 @@
+{
+  "manifest_version": 3,
+  "name": "Gemini TubeSide",
+  "version": "0.1.0",
+  "description": "Lightweight YouTube video summarization using Gemini",
+  "permissions": ["sidePanel", "storage", "activeTab"],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "https://generativelanguage.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/watch*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "side_panel": {
+    "default_path": "sidepanel.html"
+  },
+  "action": {
+    "default_title": "Gemini TubeSide"
+  },
+  "options_ui": {
+    "page": "options.html"
+  }
+}

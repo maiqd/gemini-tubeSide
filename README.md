@@ -73,6 +73,8 @@ The extension uses **Gemini 2.5 Flash** via `streamGenerateContent` with a short
 - [x] Typography controls (font family + font size) with persistent storage
 - [x] Theme selector and theme-aware code block styling
 - [x] Cache summary/key-takeaways per video; reuse until user requests again
+- [x] Text to speech
+
 
 ### Edge case hardening
 - [ ] Quota management: graceful 429 / free-tier limit handling in UI
@@ -80,7 +82,6 @@ The extension uses **Gemini 2.5 Flash** via `streamGenerateContent` with a short
 - [ ] Improved 400 handling for private/unlisted videos
 
 ### Future features
-- [ ] Text to speech
 - [ ] Popup that instructs user to get an API key (with link to Google AI Studio) when none is set
 - [ ] List of recently summarized videos for quick access
 - [ ] Semantic timeline scrubbing (Interest Invoker API on progress bar)
